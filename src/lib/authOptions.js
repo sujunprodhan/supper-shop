@@ -1,5 +1,4 @@
 import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
 import { collections, dbConnect } from '@/lib/dbConnect';
 import bcrypt from 'bcryptjs';
 
@@ -7,23 +6,35 @@ export const authOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
+
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        email: {
+          label: 'Email',
+          type: 'email',
+        },
+        password: {
+          label: 'Password',
+          type: 'password',
+        },
       },
+
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Please enter both email and password');
+          return null;
         }
 
-        const user = await dbConnect(collections.USER).findOne({ email: credentials.email });
+        const email = credentials.email.trim().toLowerCase();
+
+        const user = await dbConnect(collections.USER).findOne({ email });
+
         if (!user || !user.password) {
-          throw new Error('No user found with this email');
+          return null;
         }
 
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+
         if (!isPasswordValid) {
-          throw new Error('Invalid password');
+          return null;
         }
 
         return {
@@ -34,34 +45,28 @@ export const authOptions = {
         };
       },
     }),
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
   ],
-  pages: {
-    signIn: '/login',
-  },
+
   session: {
     strategy: 'jwt',
   },
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
+
       return token;
     },
+
     async session({ session, token }) {
-      if (token) {
+      if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
       }
+
       return session;
     },
   },

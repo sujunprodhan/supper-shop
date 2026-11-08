@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 
 const LoginFrom = () => {
   const router = useRouter();
+  const [serverSuccess, setServerSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,7 @@ const LoginFrom = () => {
   } = useForm();
 
   const onSubmit = async (data) => {
+    setServerSuccess('');
     setServerError('');
     setLoading(true);
     try {
@@ -34,6 +36,7 @@ const LoginFrom = () => {
       if (res?.error) {
         setServerError('Invalid email or password. Please try again.');
       } else if (res?.ok) {
+        setServerSuccess(res.message || 'Account created successfully!');
         router.push('/');
         router.refresh();
       }
@@ -94,6 +97,12 @@ const LoginFrom = () => {
               {serverError}
             </div>
           )}
+          {serverSuccess && (
+            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-700">
+              {serverSuccess}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Email Address */}
             <div className="space-y-1.5">

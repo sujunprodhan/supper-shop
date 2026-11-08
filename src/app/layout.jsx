@@ -2,6 +2,7 @@ import { Geist_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/layout/Navbar';
 import Footer from '@/layout/Footer';
+import NextAuthProvider from '@/provider/NextAuthProvider';
 
 const inter = Inter({
   weight: ['100', '200', '400', '500', '600', '800'],
@@ -22,15 +23,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.className} antialiased`}>
       <body suppressHydrationWarning className="flex flex-col min-h-screen">
-        <header className="min-h-17">
-          <Navbar />
-        </header>
-        <main className="flex-1 min-h-[calc(100vh-318px)]">
-          {children}
-        </main>
-        <footer className="min-h-62.5">
-          <Footer />
-        </footer>
+        <NextAuthProvider>
+          <header className="min-h-17">
+            <Navbar />
+          </header>
+          <main className="flex-1 min-h-[calc(100vh-318px)]">{children}</main>
+          <footer className="min-h-62.5">
+            <Footer />
+          </footer>
+        </NextAuthProvider>
       </body>
     </html>
   );

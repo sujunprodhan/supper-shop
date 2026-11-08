@@ -7,21 +7,21 @@ export const postUser = async (payload) => {
   try {
     const { email, password, name } = payload || {};
 
-    // check payload
     if (!email || !password || !name) {
       return { success: false, message: 'All fields are required.' };
     }
 
-    // check user
     const isExist = await dbConnect(collections.USER).findOne({ email });
+
     if (isExist) {
-      return { success: false, message: 'An account with this email already exists.' };
+      return {
+        success: false,
+        message: 'An account with this email already exists.',
+      };
     }
 
-    // hash password
     const hashPassword = await bcrypt.hash(password, 10);
 
-    // create user
     const newUser = {
       provider: 'credentials',
       name,
@@ -31,8 +31,8 @@ export const postUser = async (payload) => {
       createdAt: new Date(),
     };
 
-    // insert user
     const result = await dbConnect(collections.USER).insertOne(newUser);
+
     if (result.acknowledged) {
       return {
         success: true,
@@ -41,10 +41,62 @@ export const postUser = async (payload) => {
       };
     }
 
-    return { success: false, message: 'Failed to create account. Please try again.' };
+    return {
+      success: false,
+      message: 'Failed to create account.',
+    };
   } catch (error) {
-    console.error('Error in postUser:', error);
-    return { success: false, message: error.message || 'Server error occurred.' };
+    return {
+      success: false,
+      message: error.message || 'Server error occurred.',
+    };
+  }
+};
+
+export const loginUser = async (payload) => {
+  try {
+    const { email, password } = payload || {};
+
+    if (!email || !password) {
+      return {
+        success: false,
+        message: 'Email and password are required.',
+      };
+    }
+
+    const user = await dbConnect(collections.USER).findOne({ email });
+
+    if (!user || !user.password) {
+      return {
+        success: false,
+        message: 'User not found.',
+      };
+    }
+
+    const isMatched = await bcrypt.compare(password, user.password);
+
+    if (!isMatched) {
+      return {
+        success: false,
+        message: 'Invalid password.',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Login successful!',
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role || 'user',
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Server error occurred.',
+    };
   }
 };
 
