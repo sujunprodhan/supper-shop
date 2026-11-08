@@ -12,8 +12,10 @@
     "bcryptjs": "^3.0.3",
     "mongodb": "^7.8.0",
     "next": "16.4.5",
+    "next-auth": "^4.24.15",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-hook-form": "^7.91.0",
     "react-icons": "^5.7.0"
   },
   "devDependencies": {

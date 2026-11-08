@@ -1,5 +1,6 @@
 'use client';
 
+import CartButton from '@/buttons/CartButton';
 import React, { useState } from 'react';
 import { FaShoppingCart, FaBolt, FaHeart } from 'react-icons/fa';
 
@@ -31,9 +32,7 @@ const ProductActions = ({ product }) => {
           >
             -
           </button>
-          <span className="w-12 text-center text-sm font-bold text-slate-800">
-            {quantity}
-          </span>
+          <span className="w-12 text-center text-sm font-bold text-slate-800">{quantity}</span>
           <button
             onClick={increment}
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-base font-bold text-slate-700 shadow-xs hover:bg-slate-100 transition-colors disabled:opacity-40"
@@ -53,17 +52,10 @@ const ProductActions = ({ product }) => {
           <FaHeart className="text-base" />
         </button>
       </div>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-sky-600/30 hover:bg-sky-700 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-200"
-        >
-          <FaShoppingCart className="text-sm" />
-          <span>Add to Cart</span>
-        </button>
+      <div className="grid grid-cols-2 sm:flex-row gap-3">
+        <CartButton product={product}></CartButton>
 
-        <button
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800 hover:-translate-y-0.5 transition-all duration-200"
-        >
+        <button className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800 hover:-translate-y-0.5 transition-all duration-200">
           <FaBolt className="text-sm text-amber-400" />
           <span>Buy Now</span>
         </button>
@@ -73,4 +65,3 @@ const ProductActions = ({ product }) => {
 };
 
 export default ProductActions;
-

@@ -4,7 +4,8 @@ const uri = process.env.MONGODB_URI;
 const dbName = process.env.DB_NAME;
 
 export const collections = {
-  PRODUCT:'product'
+  PRODUCT: 'product',
+  USER: 'user',
 };
 
 const client = new MongoClient(uri, {

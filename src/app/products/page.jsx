@@ -1,5 +1,5 @@
 import React from 'react';
-import Product from '@/pages/Product';
+import Product from '@/components/Product';
 import Container from '@/layout/Container';
 import { FaShoppingBag } from 'react-icons/fa';
 

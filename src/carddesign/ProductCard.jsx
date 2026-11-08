@@ -2,9 +2,12 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaStar, FaShoppingCart, FaEye } from 'react-icons/fa';
+import CartButton from '@/buttons/CartButton';
 
-const ProductCard = ({ item }) => {
-  if (!item) return null;
+
+const ProductCard = ({ item, product }) => {
+  const currentProduct = item || product;
+  if (!currentProduct) return null;
 
   const {
     _id,
@@ -18,7 +21,7 @@ const ProductCard = ({ item }) => {
     description,
     featured,
     rating = 4.5,
-  } = item;
+  } = currentProduct;
 
   const finalPrice = discount > 0 ? Math.round(price - (price * discount) / 100) : price;
 
@@ -104,10 +107,7 @@ const ProductCard = ({ item }) => {
               <span>Details</span>
             </Link>
 
-            <button className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 py-2 text-xs font-semibold text-white shadow-xs shadow-sky-600/30 hover:bg-sky-700 hover:shadow-sky-600/40 transition-all duration-200">
-              <FaShoppingCart className="text-xs" />
-              <span>Add</span>
-            </button>
+            <CartButton product={currentProduct} />
           </div>
         </div>
       </div>
