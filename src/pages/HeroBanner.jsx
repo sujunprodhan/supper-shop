@@ -29,7 +29,7 @@ const HeroBanner = () => {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2">
               <Link
-                href="/product"
+                href="/products"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-6 py-3.5 text-sm md:text-base font-semibold text-white shadow-lg shadow-sky-600/30 hover:bg-sky-700 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-200"
               >
                 <span>Shop Now</span>
