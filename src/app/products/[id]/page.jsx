@@ -167,13 +167,13 @@ const ProductDetails = async ({ params }) => {
                 </div>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100 flex items-baseline gap-4">
-                <span className="text-3xl sm:text-4xl font-black text-sky-600">৳{finalPrice}</span>
+                <span className="text-3xl sm:text-4xl font-black text-sky-600">${finalPrice}</span>
 
                 {discount > 0 && (
                   <>
-                    <span className="text-base text-slate-400 line-through">৳{price}</span>
+                    <span className="text-base text-slate-400 line-through">${price}</span>
                     <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                      Save ৳{savings} ({discount}%)
+                      Save ${savings} ({discount}%)
                     </span>
                   </>
                 )}
