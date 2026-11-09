@@ -7,10 +7,13 @@ import { useForm } from 'react-hook-form';
 import { FcGoogle } from 'react-icons/fc';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaShoppingCart } from 'react-icons/fa';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import SocialButton from '@/buttons/SocialButton';
 
 const LoginFrom = () => {
   const router = useRouter();
+  const params = useSearchParams();
+  const callBack = params.get('callbackUrl') || '';
   const [serverSuccess, setServerSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -30,15 +33,11 @@ const LoginFrom = () => {
       const res = await signIn('credentials', {
         email: data.email,
         password: data.password,
-        redirect: false,
+        callbackUrl: params.get('callbackUrl') || '',
       });
 
-      if (res?.error) {
-        setServerError('Invalid email or password. Please try again.');
-      } else if (res?.ok) {
-        setServerSuccess(res.message || 'Account created successfully!');
-        router.push('/');
-        router.refresh();
+      if (res?.ok) {
+        setServerSuccess('Login successful!');
       }
     } catch (error) {
       setServerError('An unexpected error occurred. Please try again.');
@@ -48,7 +47,7 @@ const LoginFrom = () => {
   };
 
   const handleGoogleLogin = () => {
-    signIn('google', { callbackUrl: '/' });
+    signIn('google', { callbackUrl });
   };
 
   return (
@@ -74,16 +73,7 @@ const LoginFrom = () => {
           </div>
 
           {/* Google Sign In Button */}
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 cursor-pointer"
-          >
-            <FcGoogle className="text-xl" />
-            <span>Continue with Google</span>
-          </button>
-
-          {/* Divider */}
+          <SocialButton></SocialButton>
           <div className="relative my-6 flex items-center justify-center">
             <div className="w-full border-t border-slate-200"></div>
             <span className="absolute bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -177,7 +167,10 @@ const LoginFrom = () => {
           </form>
           <div className="mt-6 text-center text-xs text-slate-500">
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="font-bold text-sky-600 hover:underline">
+            <Link
+              href={callBack ? `/register?callbackUrl=${callBack}` : '/register'}
+              className="font-bold text-sky-600 hover:underline"
+            >
               Register
             </Link>
           </div>

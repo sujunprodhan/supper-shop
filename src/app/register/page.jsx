@@ -1,5 +1,5 @@
 import RegisterFrom from '@/auth/RegisterFrom';
-import React from 'react';
+import React, { Suspense } from 'react';
 
 export const metadata = {
   title: 'Register | SuperShop',
@@ -9,7 +9,9 @@ export const metadata = {
 const RegisterPage = () => {
   return (
     <div>
-      <RegisterFrom />
+      <Suspense fallback={null}>
+        <RegisterFrom />
+      </Suspense>
     </div>
   );
 };

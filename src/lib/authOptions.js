@@ -1,5 +1,6 @@
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { collections, dbConnect } from '@/lib/dbConnect';
+import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 
 export const authOptions = {
@@ -45,6 +46,11 @@ export const authOptions = {
         };
       },
     }),
+    
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
   ],
 
   session: {
@@ -52,6 +58,34 @@ export const authOptions = {
   },
 
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === 'google') {
+        try {
+          const { email, name, image } = user;
+          const userCollection = dbConnect(collections.USER);
+          const isExist = await userCollection.findOne({ email });
+          if (!isExist) {
+            const newUser = {
+              name,
+              email,
+              image,
+              provider: 'google',
+              role: 'user',
+              createdAt: new Date(),
+            };
+            const res = await userCollection.insertOne(newUser);
+            user.id = res.insertedId.toString();
+          } else {
+            user.id = isExist._id.toString();
+            user.role = isExist.role || 'user';
+          }
+        } catch (error) {
+          console.error('Error in Google signIn callback:', error);
+        }
+      }
+      return true;
+    },
+
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -66,10 +100,10 @@ export const authOptions = {
         session.user.id = token.id;
         session.user.role = token.role;
       }
-
       return session;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export default authOptions;

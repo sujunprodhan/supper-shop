@@ -15,12 +15,15 @@ import {
   FaShoppingCart,
 } from 'react-icons/fa';
 import { registerUser } from '@/actions/server/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import SocialButton from '@/buttons/SocialButton';
 
 const RegisterFrom = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callBack = searchParams.get('callbackUrl') || '';
   const [showPassword, setShowPassword] = useState(false);
-  // const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [serverError, setServerError] = useState('');
   const [serverSuccess, setServerSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,7 +47,7 @@ const RegisterFrom = () => {
 
       if (res?.success) {
         setServerSuccess(res.message || 'Account created successfully!');
-        router.push('/login');
+        router.push(callBack ? `/login?callbackUrl=${callBack}` : '/login');
       } else {
         setServerError(res?.message || 'Registration failed. Please try again.');
       }
@@ -75,13 +78,9 @@ const RegisterFrom = () => {
               Sign up today to explore thousands of fresh products
             </p>
           </div>
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 cursor-pointer"
-          >
-            <FcGoogle className="text-xl" />
-            <span>Continue with Google</span>
-          </button>
+
+          {/* Google Sign Up Button */}
+          <SocialButton />
 
           {/* Divider */}
           <div className="relative my-6 flex items-center justify-center">
@@ -168,8 +167,6 @@ const RegisterFrom = () => {
                 <p className="text-[11px] text-rose-500">{errors.password.message}</p>
               )}
             </div>
-
-            {/* Terms and Conditions */}
             <div className="flex items-center gap-2 pt-1">
               <input
                 type="checkbox"
@@ -188,6 +185,8 @@ const RegisterFrom = () => {
                 </Link>
               </label>
             </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -196,9 +195,14 @@ const RegisterFrom = () => {
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
+
+          {/* Footer Navigation Link */}
           <div className="mt-6 text-center text-xs text-slate-500">
             Already have an account?{' '}
-            <Link href="/login" className="font-bold text-sky-600 hover:underline">
+            <Link
+              href={callBack ? `/login?callbackUrl=${callBack}` : '/login'}
+              className="font-bold text-sky-600 hover:underline"
+            >
               Log In
             </Link>
           </div>

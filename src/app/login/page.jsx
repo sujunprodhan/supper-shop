@@ -1,5 +1,5 @@
 import LoginFrom from '@/auth/LoginFrom';
-import React from 'react';
+import React, { Suspense } from 'react';
 
 export const metadata = {
   title: 'Sign In | SuperShop',
@@ -9,7 +9,9 @@ export const metadata = {
 const LoginPage = () => {
   return (
     <div>
-      <LoginFrom />
+      <Suspense fallback={null}>
+        <LoginFrom />
+      </Suspense>
     </div>
   );
 };
