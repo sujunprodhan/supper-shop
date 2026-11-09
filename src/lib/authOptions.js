@@ -46,7 +46,7 @@ export const authOptions = {
         };
       },
     }),
-    
+
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -90,8 +90,10 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        if (user.image) {
+          token.image = user.image;
+        }
       }
-
       return token;
     },
 
@@ -99,6 +101,9 @@ export const authOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        if (token.image || token.picture) {
+          session.user.image = token.image || token.picture;
+        }
       }
       return session;
     },

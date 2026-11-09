@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { FaStar, FaShoppingCart, FaEye } from 'react-icons/fa';
 import CartButton from '@/buttons/CartButton';
 
-
-const ProductCard = ({ item, product }) => {
-  const currentProduct = item || product;
+const ProductCard = ({ product }) => {
+  const currentProduct = product;
   if (!currentProduct) return null;
 
   const {
@@ -107,7 +106,7 @@ const ProductCard = ({ item, product }) => {
               <span>Details</span>
             </Link>
 
-            <CartButton product={currentProduct} />
+            <CartButton product={{...currentProduct, _id: _id.toString()}} />
           </div>
         </div>
       </div>

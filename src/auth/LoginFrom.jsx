@@ -5,15 +5,17 @@ import Container from '@/layout/Container';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { FcGoogle } from 'react-icons/fc';
-import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaShoppingCart } from 'react-icons/fa';
-import { signIn } from 'next-auth/react';
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaShoppingCart, FaSpinner } from 'react-icons/fa';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SocialButton from '@/buttons/SocialButton';
+import { toast } from 'sonner';
 
 const LoginFrom = () => {
   const router = useRouter();
   const params = useSearchParams();
   const callBack = params.get('callbackUrl') || '';
+  const { status } = useSession();
   const [serverSuccess, setServerSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -33,13 +35,21 @@ const LoginFrom = () => {
       const res = await signIn('credentials', {
         email: data.email,
         password: data.password,
-        callbackUrl: params.get('callbackUrl') || '',
+        redirect: false,
+        callbackUrl: callBack || '/',
       });
 
       if (res?.ok) {
+        toast.success('Logged in successfully!');
         setServerSuccess('Login successful!');
+        router.push(callBack || '/');
+        router.refresh();
+      } else {
+        toast.error('Invalid email or password. Please try again.');
+        setServerError('Invalid email or password. Please check your credentials.');
       }
     } catch (error) {
+      toast.error('An unexpected error occurred. Please try again.');
       setServerError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -159,10 +169,17 @@ const LoginFrom = () => {
             </div>
             <button
               type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-sky-600 py-3 text-sm font-bold text-white shadow-md shadow-sky-600/30 hover:bg-sky-700 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={status === 'loading' || loading}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 py-3 text-sm font-bold text-white shadow-md shadow-sky-600/30 hover:bg-sky-700 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? (
+                <>
+                  <FaSpinner className="animate-spin text-sm" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <span>Sign In</span>
+              )}
             </button>
           </form>
           <div className="mt-6 text-center text-xs text-slate-500">

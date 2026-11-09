@@ -13,17 +13,20 @@ import {
   FaEye,
   FaEyeSlash,
   FaShoppingCart,
+  FaSpinner,
 } from 'react-icons/fa';
 import { registerUser } from '@/actions/server/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import SocialButton from '@/buttons/SocialButton';
+import { toast } from 'sonner';
 
 const RegisterFrom = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callBack = searchParams.get('callbackUrl') || '';
+  const { status } = useSession();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [serverError, setServerError] = useState('');
   const [serverSuccess, setServerSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,12 +49,15 @@ const RegisterFrom = () => {
       });
 
       if (res?.success) {
+        toast.success(res.message || 'Account created successfully!');
         setServerSuccess(res.message || 'Account created successfully!');
         router.push(callBack ? `/login?callbackUrl=${callBack}` : '/login');
       } else {
+        toast.error(res?.message || 'Registration failed. Please try again.');
         setServerError(res?.message || 'Registration failed. Please try again.');
       }
     } catch (error) {
+      toast.error('A network error occurred! Please try again.');
       setServerError('A network error occurred! Please try again.');
     } finally {
       setLoading(false);
@@ -81,8 +87,6 @@ const RegisterFrom = () => {
 
           {/* Google Sign Up Button */}
           <SocialButton />
-
-          {/* Divider */}
           <div className="relative my-6 flex items-center justify-center">
             <div className="w-full border-t border-slate-200"></div>
             <span className="absolute bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -185,18 +189,21 @@ const RegisterFrom = () => {
                 </Link>
               </label>
             </div>
-
-            {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-sky-600 py-3 text-sm font-bold text-white shadow-md shadow-sky-600/30 hover:bg-sky-700 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={status === 'loading' || loading}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 py-3 text-sm font-bold text-white shadow-md shadow-sky-600/30 hover:bg-sky-700 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? (
+                <>
+                  <FaSpinner className="animate-spin text-sm" />
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <span>Create Account</span>
+              )}
             </button>
           </form>
-
-          {/* Footer Navigation Link */}
           <div className="mt-6 text-center text-xs text-slate-500">
             Already have an account?{' '}
             <Link

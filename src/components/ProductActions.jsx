@@ -2,7 +2,7 @@
 
 import CartButton from '@/buttons/CartButton';
 import React, { useState } from 'react';
-import { FaShoppingCart, FaBolt, FaHeart } from 'react-icons/fa';
+import { FaBolt, FaHeart } from 'react-icons/fa';
 
 const ProductActions = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
@@ -54,7 +54,6 @@ const ProductActions = ({ product }) => {
       </div>
       <div className="grid grid-cols-2 sm:flex-row gap-3">
         <CartButton product={product}></CartButton>
-
         <button className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800 hover:-translate-y-0.5 transition-all duration-200">
           <FaBolt className="text-sm text-amber-400" />
           <span>Buy Now</span>

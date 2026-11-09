@@ -3,6 +3,7 @@ import './globals.css';
 import Navbar from '@/layout/Navbar';
 import Footer from '@/layout/Footer';
 import NextAuthProvider from '@/provider/NextAuthProvider';
+import { Toaster } from 'sonner';
 
 const inter = Inter({
   weight: ['100', '200', '400', '500', '600', '800'],
@@ -24,6 +25,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${inter.className} antialiased`}>
       <body suppressHydrationWarning className="flex flex-col min-h-screen">
         <NextAuthProvider>
+          <Toaster position="top-center" richColors />
           <header className="min-h-17">
             <Navbar />
           </header>
