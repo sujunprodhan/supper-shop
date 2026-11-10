@@ -5,10 +5,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FaShoppingCart, FaSpinner } from 'react-icons/fa';
 import { toast } from 'sonner';
+import { useCart } from '@/provider/CartProvider';
 
 const CartButton = ({ product }) => {
   const { status } = useSession();
   const isLogin = status === 'authenticated';
+  const { refreshCartCount } = useCart();
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const path = usePathname();
@@ -20,6 +22,7 @@ const CartButton = ({ product }) => {
         const result = await handleCart({ product, inc: true });
         if (result?.success) {
           toast.success('Product added to cart successfully!');
+          refreshCartCount();
         } else {
           toast.error(result?.message || 'Failed to add product to cart.');
         }

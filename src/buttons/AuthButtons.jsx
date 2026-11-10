@@ -37,7 +37,7 @@ const AuthButtons = () => {
             <FaChevronDown className="text-xs text-slate-500 mr-1.5 transition-transform" />
           </div>
 
-          {/* Dropdown Content with Logout Button */}
+          {/* Dropdown Logout Button */}
           <ul
             tabIndex={0}
             className="dropdown-content menu z-50 mt-2 p-2 shadow-xl bg-white/95 backdrop-blur-md rounded-2xl w-56 border border-slate-100 space-y-1"

@@ -1,8 +1,9 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaStar, FaShoppingCart, FaEye } from 'react-icons/fa';
+import { FaStar, FaEye } from 'react-icons/fa';
 import CartButton from '@/buttons/CartButton';
+import WishlistButton from '@/buttons/WishlistButton';
 
 const ProductCard = ({ product }) => {
   const currentProduct = product;
@@ -52,9 +53,15 @@ const ProductCard = ({ product }) => {
             </span>
           )}
         </div>
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full bg-white/90 backdrop-blur-xs px-2.5 py-0.5 text-xs font-semibold text-slate-800 shadow-xs border border-slate-100">
-          <FaStar className="text-amber-400 text-xs" />
-          <span>{rating}</span>
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+          <div className="flex items-center gap-1 rounded-full bg-white/90 backdrop-blur-xs px-2 py-0.5 text-xs font-semibold text-slate-800 shadow-xs border border-slate-100">
+            <FaStar className="text-amber-400 text-xs" />
+            <span>{rating}</span>
+          </div>
+          <WishlistButton
+            product={{ ...currentProduct, _id: _id.toString() }}
+            className="h-7 w-7 min-h-0 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-white shadow-xs border border-slate-100 transition-colors cursor-pointer"
+          />
         </div>
       </div>
       <div className="flex flex-col grow p-4 justify-between space-y-3">

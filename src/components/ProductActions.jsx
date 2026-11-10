@@ -1,12 +1,12 @@
 'use client';
 
 import CartButton from '@/buttons/CartButton';
+import WishlistButton from '@/buttons/WishlistButton';
 import React, { useState } from 'react';
-import { FaBolt, FaHeart } from 'react-icons/fa';
+import { FaBolt } from 'react-icons/fa';
 
 const ProductActions = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const increment = () => {
     if (quantity < (product?.stock || 99)) {
@@ -42,15 +42,7 @@ const ProductActions = ({ product }) => {
           </button>
         </div>
 
-        <button
-          onClick={() => setIsWishlisted(!isWishlisted)}
-          className={`btn btn-circle btn-ghost border border-slate-200 ${
-            isWishlisted ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:text-red-500'
-          }`}
-          aria-label="Wishlist"
-        >
-          <FaHeart className="text-base" />
-        </button>
+        <WishlistButton product={product} />
       </div>
       <div className="grid grid-cols-2 sm:flex-row gap-3">
         <CartButton product={product}></CartButton>

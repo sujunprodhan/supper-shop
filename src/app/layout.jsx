@@ -3,6 +3,7 @@ import './globals.css';
 import Navbar from '@/layout/Navbar';
 import Footer from '@/layout/Footer';
 import NextAuthProvider from '@/provider/NextAuthProvider';
+import { CartProvider } from '@/provider/CartProvider';
 import { Toaster } from 'sonner';
 
 const inter = Inter({
@@ -25,14 +26,16 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${inter.className} antialiased`}>
       <body suppressHydrationWarning className="flex flex-col min-h-screen">
         <NextAuthProvider>
-          <Toaster position="top-center" richColors />
-          <header className="min-h-17">
-            <Navbar />
-          </header>
-          <main className="flex-1 min-h-[calc(100vh-318px)]">{children}</main>
-          <footer className="min-h-62.5">
-            <Footer />
-          </footer>
+          <CartProvider>
+            <Toaster position="top-center" richColors />
+            <header className="min-h-17">
+              <Navbar />
+            </header>
+            <main className="flex-1 min-h-[calc(100vh-318px)]">{children}</main>
+            <footer className="min-h-62.5">
+              <Footer />
+            </footer>
+          </CartProvider>
         </NextAuthProvider>
       </body>
     </html>

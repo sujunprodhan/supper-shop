@@ -4,6 +4,7 @@ import NavLink from '@/buttons/NavLink';
 import Link from 'next/link';
 import { FaShoppingCart } from 'react-icons/fa';
 import AuthButtons from '@/buttons/AuthButtons';
+import NavActionButtons, { MobileNavActionButtons } from '@/buttons/NavActionButtons';
 
 const Navbar = () => {
   const nav = (
@@ -27,10 +28,11 @@ const Navbar = () => {
     <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs transition-all">
       <Container>
         <div className="navbar min-h-17.5 px-0 flex justify-between items-center">
+          {/* Left: Brand Logo */}
           <div className="navbar-start w-auto">
             <Link href={'/'} className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 bg-sky-300 rounded-xl bg-linear-to-tr from-sky-500 via-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/25 group-hover:scale-105 transition-all duration-300">
-                <FaShoppingCart className="text-base bg-sky-300" />
+              <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-sky-500 via-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/25 group-hover:scale-105 transition-all duration-300">
+                <FaShoppingCart className="text-base" />
               </div>
               <span className="text-xl font-extrabold tracking-tight text-slate-800">
                 Super<span className="text-sky-600">Shop</span>
@@ -42,17 +44,7 @@ const Navbar = () => {
           </div>
           <div className="navbar-end w-auto flex items-center gap-2">
             <div className="hidden lg:flex items-center gap-3">
-              {/* Cart Button */}
-              <Link
-                href={'/cart'}
-                className="btn btn-ghost btn-circle relative text-slate-600 hover:text-sky-600 hover:bg-sky-50 transition-colors"
-                aria-label="Shopping Cart"
-              >
-                <FaShoppingCart className="text-lg " />
-                <span className="badge badge-xs bg-sky-600 text-white border-0 absolute top-1.5 right-1.5 font-bold w-4 h-4 p-0 flex items-center justify-center rounded-full shadow-xs">
-                  0
-                </span>
-              </Link>
+              <NavActionButtons />
 
               <div className="h-5 w-px bg-slate-200"></div>
 
@@ -87,15 +79,7 @@ const Navbar = () => {
                 <ul className="space-y-1 list-none p-0 m-0">{nav}</ul>
 
                 <div className="border-t border-slate-100 pt-3 space-y-3">
-                  <Link
-                    href={'/cart'}
-                    className="flex items-center justify-between px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-sky-50 hover:text-sky-600 rounded-lg transition-colors"
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <FaShoppingCart className="text-sky-600" /> Cart
-                    </span>
-                    <span className="badge badge-sm bg-sky-600 text-white font-bold">0</span>
-                  </Link>
+                  <MobileNavActionButtons />
                   <div className="pt-1">
                     <AuthButtons />
                   </div>
