@@ -1,4 +1,3 @@
-'use client';
 import Container from '@/layout/Container';
 import {
   FaPhoneAlt,
@@ -10,19 +9,12 @@ import {
   FaComments,
 } from 'react-icons/fa';
 
-export const metadata = {
-  title: 'Contact Us | SuperShop',
-  description: 'Get in touch with the SuperShop team for support, questions, and partnerships.',
-};
-
 const ContactPage = async () => {
-  // Artificial delay to demonstrate loading state with logo
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   return (
     <div className="bg-white">
-      {/* 1. Contact Hero Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-sky-50/70 via-white to-white py-14 md:py-20 border-b border-slate-100">
+      <div className="relative overflow-hidden bg-linear-to-b from-sky-50/70 via-white to-white py-14 md:py-20 border-b border-slate-100">
         <div className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl"></div>
         <div className="pointer-events-none absolute top-1/2 -right-20 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl"></div>
 
@@ -35,7 +27,7 @@ const ContactPage = async () => {
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-tight">
               Get in Touch with{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-600">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-sky-600 to-indigo-600">
                 Our Team
               </span>
             </h1>
@@ -47,12 +39,9 @@ const ContactPage = async () => {
           </div>
         </Container>
       </div>
-
-      {/* 2. Contact Information Cards */}
       <div className="py-12 border-b border-slate-100 bg-slate-50/50">
         <Container>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Card 1: Phone */}
             <div className="rounded-2xl bg-white p-6 shadow-xs border border-slate-200/80 text-center space-y-3 hover:-translate-y-1 hover:shadow-md transition-all">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 text-lg">
                 <FaPhoneAlt />
@@ -66,8 +55,6 @@ const ContactPage = async () => {
                 +880 1800 123 456
               </a>
             </div>
-
-            {/* Card 2: Email */}
             <div className="rounded-2xl bg-white p-6 shadow-xs border border-slate-200/80 text-center space-y-3 hover:-translate-y-1 hover:shadow-md transition-all">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 text-lg">
                 <FaEnvelope />
@@ -81,8 +68,6 @@ const ContactPage = async () => {
                 support@supershop.com
               </a>
             </div>
-
-            {/* Card 3: Location */}
             <div className="rounded-2xl bg-white p-6 shadow-xs border border-slate-200/80 text-center space-y-3 hover:-translate-y-1 hover:shadow-md transition-all">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 text-lg">
                 <FaMapMarkerAlt />
@@ -91,8 +76,6 @@ const ContactPage = async () => {
               <p className="text-xs text-slate-500">Gulshan-2, Dhaka</p>
               <p className="text-sm font-bold text-slate-700">Plot 12, Road 4, Dhaka 1212</p>
             </div>
-
-            {/* Card 4: Hours */}
             <div className="rounded-2xl bg-white p-6 shadow-xs border border-slate-200/80 text-center space-y-3 hover:-translate-y-1 hover:shadow-md transition-all">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 text-lg">
                 <FaClock />
@@ -104,12 +87,9 @@ const ContactPage = async () => {
           </div>
         </Container>
       </div>
-
-      {/* 3. Interactive Contact Form & FAQ / Info */}
       <div className="py-14 md:py-20">
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-            {/* Form Section */}
             <div className="lg:col-span-7 rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 lg:p-10 shadow-sm">
               <div className="space-y-2 mb-8">
                 <div className="inline-block rounded-lg bg-sky-100/70 px-3 py-1 text-xs font-bold text-sky-700 uppercase tracking-wider">
@@ -197,7 +177,7 @@ const ContactPage = async () => {
 
             {/* Right Side: Quick Assistance Card & FAQ */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="rounded-3xl bg-gradient-to-tr from-sky-600 to-indigo-600 p-8 text-white shadow-xl">
+              <div className="rounded-3xl bg-linear-to-tr from-sky-600 to-indigo-600 p-8 text-white shadow-xl">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md mb-6">
                   <FaComments className="text-2xl text-white" />
                 </div>

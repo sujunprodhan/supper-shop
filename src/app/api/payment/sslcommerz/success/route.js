@@ -22,10 +22,10 @@ export async function POST(request) {
           { _id: new ObjectId(tran_id) },
           {
             $set: {
-              paymentStatus: `Paid (${card_type})`,
-              orderStatus: 'Confirmed',
+              paymentStatus: `Pending Approval (${card_type})`,
+              orderStatus: 'Pending',
               transactionId: bank_tran_id || tran_id,
-              paidAt: new Date(),
+              submittedAt: new Date(),
             },
           }
         );

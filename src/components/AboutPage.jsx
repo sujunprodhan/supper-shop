@@ -1,4 +1,3 @@
-'use client'
 import Container from '@/layout/Container';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,11 +10,6 @@ import {
   FaCheckCircle,
   FaArrowRight,
 } from 'react-icons/fa';
-
-export const metadata = {
-  title: 'About Us | SuperShop',
-  description: 'Learn more about SuperShop, our mission, values, and organic fresh products.',
-};
 
 const AboutPage = async () => {
   // Artificial delay to demonstrate loading state with logo

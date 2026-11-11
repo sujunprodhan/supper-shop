@@ -83,12 +83,12 @@ export const createOrder = async (orderPayload) => {
           { _id: insertResult.insertedId },
           {
             $set: {
-              paymentStatus: `Paid (Card •••• ${last4})`,
-              orderStatus: 'Confirmed',
+              paymentStatus: `Pending (Card •••• ${last4})`,
+              orderStatus: 'Pending',
               transactionId: txnId,
               cardHolderName: cardDetails.name || newOrder.userName,
               cardLast4: last4,
-              paidAt: new Date(),
+              submittedAt: new Date(),
             },
           }
         );

@@ -3,7 +3,7 @@ import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
-import { FaChevronDown, FaSignOutAlt } from 'react-icons/fa';
+import { FaChevronDown, FaSignOutAlt, FaUserCircle, FaShieldAlt } from 'react-icons/fa';
 import { toast } from 'sonner';
 
 const AuthButtons = () => {
@@ -37,26 +37,56 @@ const AuthButtons = () => {
             <FaChevronDown className="text-xs text-slate-500 mr-1.5 transition-transform" />
           </div>
 
-          {/* Dropdown Logout Button */}
+          {/* Dropdown Menu */}
           <ul
             tabIndex={0}
-            className="dropdown-content menu z-50 mt-2 p-2 shadow-xl bg-white/95 backdrop-blur-md rounded-2xl w-56 border border-slate-100 space-y-1"
+            className="dropdown-content menu z-50 mt-2 p-2 shadow-xl bg-white/95 backdrop-blur-md rounded-2xl w-60 border border-slate-100 space-y-1"
           >
             <li className="px-3 py-2 border-b border-slate-100 mb-1">
-              <span className="font-bold text-slate-800 text-xs truncate block p-0">
-                {user?.name || 'User Account'}
-              </span>
-              <span className="text-[11px] text-slate-400 font-normal truncate block p-0">
+              <div className="flex items-center justify-between p-0">
+                <span className="font-bold text-slate-800 text-xs truncate block">
+                  {user?.name || 'User Account'}
+                </span>
+                {user?.role === 'admin' && (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded uppercase">
+                    Admin
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] text-slate-400 font-normal truncate block p-0 mt-0.5">
                 {user?.email}
               </span>
             </li>
+
+            {user?.role === 'admin' && (
+              <li>
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2.5 text-amber-800 bg-amber-50 hover:bg-amber-100/80 py-2.5 px-3 rounded-xl text-xs font-bold transition-colors"
+                >
+                  <FaShieldAlt className="text-amber-600 text-sm" />
+                  <span>Admin Console</span>
+                </Link>
+              </li>
+            )}
+
             <li>
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2.5 text-slate-700 hover:bg-slate-100 py-2.5 px-3 rounded-xl text-xs font-semibold transition-colors"
+              >
+                <FaUserCircle className="text-sky-600 text-sm" />
+                <span>My Dashboard</span>
+              </Link>
+            </li>
+
+            <li className="border-t border-slate-100 pt-1">
               <button
                 onClick={async () => {
                   toast.success('Logged out successfully!');
                   await signOut();
                 }}
-                className="w-full flex items-center gap-2.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700 py-2.5 px-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+                className="w-full flex items-center gap-2.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700 py-2.5 px-3 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
               >
                 <FaSignOutAlt className="text-sm" />
                 <span>Logout</span>
