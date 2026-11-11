@@ -46,16 +46,43 @@ export const CartProvider = ({ children }) => {
   }, [status]);
 
   useEffect(() => {
-    refreshCartCount();
-    refreshWishlistCount();
-  }, [refreshCartCount, refreshWishlistCount]);
+    let isMounted = true;
+
+    const loadInitialCounts = async () => {
+      if (status === 'authenticated') {
+        try {
+          const [cCount, wCount] = await Promise.all([
+            getCartCount(),
+            getWishlistCount(),
+          ]);
+          if (isMounted) {
+            setCartCount(cCount || 0);
+            setWishlistCount(wCount || 0);
+          }
+        } catch (err) {
+          console.error('Error fetching initial counts:', err);
+        }
+      } else if (status === 'unauthenticated') {
+        if (isMounted) {
+          setCartCount(0);
+          setWishlistCount(0);
+        }
+      }
+    };
+
+    loadInitialCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [status]);
 
   return (
     <CartContext.Provider
       value={{
-        cartCount,
+        cartCount: status === 'authenticated' ? cartCount : 0,
         setCartCount,
-        wishlistCount,
+        wishlistCount: status === 'authenticated' ? wishlistCount : 0,
         setWishlistCount,
         refreshCartCount,
         refreshWishlistCount,
@@ -67,4 +94,3 @@ export const CartProvider = ({ children }) => {
 };
 
 export const useCart = () => useContext(CartContext);
-

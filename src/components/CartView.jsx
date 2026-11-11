@@ -168,14 +168,13 @@ const CartView = ({ initialItems = [] }) => {
 
   return (
     <div className="py-8 sm:py-12">
-      {/* Page Title & Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Shopping Cart
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            You have <span className="font-bold text-sky-600">{items.length}</span> unique{' '}
+            You have <span className="font-bold text-sky-600">{items.length}</span>{' '}
             {items.length === 1 ? 'item' : 'items'} in your cart
           </p>
         </div>
@@ -374,13 +373,13 @@ const CartView = ({ initialItems = [] }) => {
             </form>
 
             {/* Checkout Button */}
-            <button
-              onClick={() => toast.success('Proceeding to Checkout! (Feature coming soon)')}
+            <Link
+              href="/checkout"
               className="w-full rounded-2xl bg-sky-600 py-3.5 text-sm font-bold text-white shadow-md shadow-sky-600/30 hover:bg-sky-700 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
             >
               <FaShieldAlt className="text-sm" />
               <span>Proceed to Checkout</span>
-            </button>
+            </Link>
 
             {/* Guarantee Perks */}
             <div className="pt-2 border-t border-slate-100 space-y-2 text-[11px] text-slate-500">

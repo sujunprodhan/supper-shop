@@ -3,6 +3,7 @@ import { getCart } from '@/actions/server/cart';
 import Container from '@/layout/Container';
 import CartView from '@/components/CartView';
 
+
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
