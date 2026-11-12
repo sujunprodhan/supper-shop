@@ -512,3 +512,97 @@ export const updateProductStock = async ({ productId, newStock }) => {
     return { success: false, message: error.message };
   }
 };
+
+// 11. Lightweight Live Updates Polling (Orders, Revenue, Users, Inventory)
+export const getLiveAdminUpdates = async () => {
+  try {
+    const auth = await verifyAdmin();
+    if (!auth.isAuthorized) {
+      return { success: false, message: auth.message };
+    }
+
+    const orderCollection = dbConnect(collections.ORDER);
+    const userCollection = dbConnect(collections.USER);
+    const productCollection = dbConnect(collections.PRODUCT);
+
+    const [allOrders, totalUsers, allProducts] = await Promise.all([
+      orderCollection.find().sort({ createdAt: -1 }).toArray(),
+      userCollection.countDocuments(),
+      productCollection.find().toArray(),
+    ]);
+
+    const totalRevenue = allOrders.reduce((acc, order) => {
+      const isPaid =
+        order.orderStatus === 'Confirmed' ||
+        order.orderStatus === 'Processing' ||
+        order.orderStatus === 'Shipped' ||
+        order.orderStatus === 'Delivered' ||
+        order.paymentStatus?.toLowerCase().includes('paid');
+      return isPaid ? acc + (Number(order.grandTotal) || 0) : acc;
+    }, 0);
+
+    const totalOrdersCount = allOrders.length;
+    const pendingOrdersCount = allOrders.filter(
+      (o) =>
+        o.orderStatus === 'Pending' ||
+        o.paymentStatus?.toLowerCase().includes('pending') ||
+        o.paymentStatus?.toLowerCase().includes('awaiting')
+    ).length;
+
+    const totalItemsSold = allOrders.reduce((acc, order) => {
+      if (order.orderStatus === 'Cancelled') return acc;
+      return (
+        acc +
+        (order.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
+      );
+    }, 0);
+
+    const validOrders = allOrders.filter((o) => o.orderStatus !== 'Cancelled');
+    const avgOrderValue =
+      validOrders.length > 0
+        ? Math.round(
+            validOrders.reduce((sum, o) => sum + (Number(o.grandTotal) || 0), 0) /
+              validOrders.length
+          )
+        : 0;
+
+    const pipeline = {
+      new: allOrders.filter((o) => o.orderStatus === 'Pending').length,
+      packing: allOrders.filter((o) => o.orderStatus === 'Processing').length,
+      shipped: allOrders.filter((o) => o.orderStatus === 'Shipped').length,
+      delivered: allOrders.filter((o) => o.orderStatus === 'Delivered').length,
+      cancelled: allOrders.filter((o) => o.orderStatus === 'Cancelled').length,
+    };
+
+    const channelRevenue = {
+      card: allOrders
+        .filter((o) => o.paymentMethod === 'card' && o.orderStatus !== 'Cancelled')
+        .reduce((sum, o) => sum + (Number(o.grandTotal) || 0), 0),
+      mobile: allOrders
+        .filter((o) => o.paymentMethod === 'mobile' && o.orderStatus !== 'Cancelled')
+        .reduce((sum, o) => sum + (Number(o.grandTotal) || 0), 0),
+      cod: allOrders
+        .filter((o) => o.paymentMethod === 'cod' && o.orderStatus !== 'Cancelled')
+        .reduce((sum, o) => sum + (Number(o.grandTotal) || 0), 0),
+    };
+
+    return {
+      success: true,
+      stats: {
+        totalRevenue,
+        totalOrdersCount,
+        pendingOrdersCount,
+        totalUsers,
+        totalItemsSold,
+        avgOrderValue,
+        pipeline,
+        channelRevenue,
+      },
+      orders: JSON.parse(JSON.stringify(allOrders)),
+      products: JSON.parse(JSON.stringify(allProducts)),
+    };
+  } catch (error) {
+    console.error('Error in getLiveAdminUpdates:', error);
+    return { success: false, message: error.message };
+  }
+};

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -326,9 +326,7 @@ const AdminDashboardView = ({
 
   return (
     <div className="min-h-screen bg-slate-50/70 flex flex-col md:flex-row font-sans text-slate-900">
-      {/* =========================================================================
-          LEFT SIDEBAR (Styled with SuperShop Sky-600 / Slate Brand Theme)
-      ========================================================================== */}
+     
       <aside className="w-full md:w-64 bg-white border-r border-slate-200/80 p-4 flex flex-col justify-between shrink-0 shadow-xs">
         <div className="space-y-5">
           {/* Brand Logo & Name */}

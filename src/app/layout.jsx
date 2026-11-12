@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
         <NextAuthProvider>
           <CartProvider>
             <Toaster position="top-center" richColors />
-            <header className="min-h-17">
+            <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-100/80 shadow-xs">
               <Navbar />
             </header>
             <main className="flex-1 min-h-[calc(100vh-318px)]">{children}</main>

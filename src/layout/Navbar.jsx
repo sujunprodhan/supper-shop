@@ -25,7 +25,7 @@ const Navbar = () => {
   );
 
   return (
-    <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs transition-all">
+    <div className="w-full">
       <Container>
         <div className="navbar min-h-17.5 px-0 flex justify-between items-center">
           {/* Left: Brand Logo */}
