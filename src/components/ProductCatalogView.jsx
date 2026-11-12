@@ -8,9 +8,7 @@ import {
   FaFilter,
   FaSearch,
   FaTimes,
-  FaSortAmountDown,
   FaBoxes,
-  FaSpa,
   FaPumpSoap,
   FaHeart,
   FaMagic,
@@ -34,42 +32,46 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // URL category param
+  // URL category param (defaults to 'All' when not provided in URL)
   const urlCategory = searchParams.get('category') || 'All';
 
   const [selectedCategory, setSelectedCategory] = useState(urlCategory);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured'); // 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'discount'
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [priceRange, setPriceRange] = useState(100); // Max price slider
+  const [priceRange, setPriceRange] = useState(null); // null means no price limit by default
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   // Sync with URL when search params change
   useEffect(() => {
-    if (urlCategory) {
-      setSelectedCategory(urlCategory);
-    }
+    setSelectedCategory(urlCategory);
   }, [urlCategory]);
 
-  // Compute live categories and counts
-  const { categories, categoryCounts, maxPossiblePrice } = useMemo(() => {
+  // Compute live categories, counts, and realistic min/max price bounds
+  const { categories, categoryCounts, minPossiblePrice, maxPossiblePrice } = useMemo(() => {
     const counts = {};
-    let highestPrice = 50;
+    let highestPrice = 0;
+    let lowestPrice = Infinity;
 
     initialProducts.forEach((p) => {
       const cat = p.category || 'General';
       counts[cat] = (counts[cat] || 0) + 1;
       const price = Number(p.price) || 0;
       if (price > highestPrice) highestPrice = price;
+      if (price < lowestPrice) lowestPrice = price;
     });
 
     const uniqueCats = ['All', ...Object.keys(counts)];
     return {
       categories: uniqueCats,
       categoryCounts: counts,
-      maxPossiblePrice: Math.ceil(highestPrice / 10) * 10,
+      minPossiblePrice: lowestPrice === Infinity ? 0 : Math.floor(lowestPrice / 50) * 50,
+      maxPossiblePrice: highestPrice > 0 ? Math.ceil(highestPrice / 100) * 100 : 3000,
     };
   }, [initialProducts]);
+
+  const activePriceCap = priceRange !== null ? priceRange : maxPossiblePrice;
+  const isPriceFilterActive = priceRange !== null && priceRange < maxPossiblePrice;
 
   // Handle Category Select
   const handleSelectCategory = (cat) => {
@@ -91,7 +93,7 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
     setSearchQuery('');
     setSortBy('featured');
     setInStockOnly(false);
-    setPriceRange(maxPossiblePrice);
+    setPriceRange(null);
     router.push(pathname, { scroll: false });
   };
 
@@ -115,13 +117,15 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
         if (inStockOnly && Number(p.stock || 0) <= 0) {
           return false;
         }
-        // Price Filter
-        const finalPrice =
-          p.discount > 0
-            ? Math.round(Number(p.price) - (Number(p.price) * Number(p.discount)) / 100)
-            : Number(p.price);
-        if (finalPrice > priceRange) {
-          return false;
+        // Price Filter (only when specifically restricted)
+        if (isPriceFilterActive) {
+          const finalPrice =
+            p.discount > 0
+              ? Math.round(Number(p.price) - (Number(p.price) * Number(p.discount)) / 100)
+              : Number(p.price);
+          if (finalPrice > priceRange) {
+            return false;
+          }
         }
         return true;
       })
@@ -141,14 +145,14 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
         if (sortBy === 'discount') return (Number(b.discount) || 0) - (Number(a.discount) || 0);
         return 0; // 'featured' (original db order)
       });
-  }, [initialProducts, selectedCategory, searchQuery, inStockOnly, priceRange, sortBy]);
+  }, [initialProducts, selectedCategory, searchQuery, inStockOnly, isPriceFilterActive, priceRange, sortBy]);
 
   const hasActiveFilters =
     selectedCategory !== 'All' ||
     searchQuery.trim() !== '' ||
     inStockOnly ||
     sortBy !== 'featured' ||
-    priceRange < maxPossiblePrice;
+    isPriceFilterActive;
 
   return (
     <div className="py-8 sm:py-12 bg-slate-50/40 min-h-screen">
@@ -277,22 +281,24 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
                   </div>
                   <span>Filter by Price</span>
                 </h3>
-                <span className="text-xs font-bold text-sky-600">${priceRange}</span>
+                <span className="text-xs font-bold text-sky-600">
+                  {isPriceFilterActive ? `Under $${priceRange}` : 'All Prices'}
+                </span>
               </div>
 
               {/* Price Range Slider */}
               <div className="space-y-2">
                 <input
                   type="range"
-                  min="5"
+                  min={minPossiblePrice}
                   max={maxPossiblePrice}
-                  step="1"
-                  value={priceRange}
+                  step="50"
+                  value={activePriceCap}
                   onChange={(e) => setPriceRange(Number(e.target.value))}
                   className="range range-xs range-info w-full cursor-pointer"
                 />
                 <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                  <span>Min: $5</span>
+                  <span>Min: ${minPossiblePrice}</span>
                   <span>Max: ${maxPossiblePrice}</span>
                 </div>
               </div>
@@ -379,7 +385,7 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
               </div>
             </div>
 
-            {/* Active Filter Pills Bar */}
+            {/* Active Filter Pills Bar (Only shown when user actively filters) */}
             {hasActiveFilters && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <span className="text-xs font-semibold text-slate-400">Active Filters:</span>
@@ -414,10 +420,10 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
                   </span>
                 )}
 
-                {priceRange < maxPossiblePrice && (
+                {isPriceFilterActive && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
                     <span>Under ${priceRange}</span>
-                    <button onClick={() => setPriceRange(maxPossiblePrice)} className="hover:text-amber-900 cursor-pointer">
+                    <button onClick={() => setPriceRange(null)} className="hover:text-amber-900 cursor-pointer">
                       <FaTimes className="text-[10px]" />
                     </button>
                   </span>
@@ -469,4 +475,3 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
 };
 
 export default ProductCatalogView;
-
