@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb';
 export const getProduct = async () => {
   try {
     const productCollection = dbConnect(collections.PRODUCT);
-    const products = await productCollection.find().toArray();
+    const products = await productCollection.find().sort({ _id: -1 }).toArray();
     const result = JSON.parse(JSON.stringify(products));
     return result;
   } catch (error) {

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -30,7 +30,13 @@ import {
   FaSave,
   FaShoppingCart,
   FaTrash,
+  FaEdit,
+  FaImage,
+  FaStar,
+  FaTag,
+  FaComments,
 } from 'react-icons/fa';
+import AdminLiveChatView from '@/components/AdminLiveChatView';
 import {
   updateOrderPaymentStatus,
   updateOrderStatus,
@@ -38,6 +44,9 @@ import {
   updateUserRole,
   updateProductStock,
   deleteUserByAdmin,
+  createProductByAdmin,
+  updateProductByAdmin,
+  deleteProductByAdmin,
 } from '@/actions/server/admin';
 import { toast } from 'sonner';
 
@@ -61,6 +70,176 @@ const AdminDashboardView = ({
   const [stockSearch, setStockSearch] = useState('');
   const [stockFilter, setStockFilter] = useState('all'); // 'all' | 'low' | 'out' | 'in'
   const [stockUpdates, setStockUpdates] = useState({});
+
+  // Product Catalog & Modal State
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('All');
+  const [productForm, setProductForm] = useState({
+    title: '',
+    category: 'Skincare',
+    customCategory: '',
+    price: '',
+    discount: '0',
+    stock: '15',
+    unit: 'piece',
+    image: '',
+    description: '',
+    featured: true,
+  });
+
+  // Unique existing categories list
+  const existingCategories = Array.from(
+    new Set(products.map((p) => p.category).filter(Boolean))
+  );
+
+  // Sample High-Res Presets for fast testing
+  const sampleImagePresets = [
+    { name: 'Skincare', url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&auto=format&fit=crop&q=80' },
+    { name: 'Body Care', url: 'https://images.unsplash.com/photo-1608248597359-00f72390f701?w=800&auto=format&fit=crop&q=80' },
+    { name: 'Hair Care', url: 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=800&auto=format&fit=crop&q=80' },
+    { name: 'Spa Essentials', url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop&q=80' },
+    { name: 'Aromatherapy', url: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&auto=format&fit=crop&q=80' },
+  ];
+
+  const handleOpenAddProduct = () => {
+    setEditingProduct(null);
+    setProductForm({
+      title: '',
+      category: existingCategories[0] || 'Skincare',
+      customCategory: '',
+      price: '',
+      discount: '0',
+      stock: '20',
+      unit: '250 ml',
+      image: sampleImagePresets[0].url,
+      description: '',
+      featured: true,
+    });
+    setProductModalOpen(true);
+  };
+
+  const handleOpenEditProduct = (prod) => {
+    setEditingProduct(prod);
+    setProductForm({
+      title: prod.title || '',
+      category: prod.category || 'General',
+      customCategory: '',
+      price: String(prod.price || ''),
+      discount: String(prod.discount || '0'),
+      stock: String(prod.stock || '0'),
+      unit: prod.unit || 'piece',
+      image: prod.image || '',
+      description: prod.description || '',
+      featured: Boolean(prod.featured),
+    });
+    setProductModalOpen(true);
+  };
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    if (!productForm.title.trim()) {
+      toast.error('Product title is required.');
+      return;
+    }
+    const numPrice = Number(productForm.price);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      toast.error('Please enter a valid price (e.g. 500).');
+      return;
+    }
+
+    const resolvedCategory =
+      productForm.category === 'NEW_CATEGORY'
+        ? productForm.customCategory.trim()
+        : productForm.category.trim();
+
+    if (!resolvedCategory) {
+      toast.error('Please specify a category.');
+      return;
+    }
+
+    setIsSavingProduct(true);
+    try {
+      const payload = {
+        title: productForm.title.trim(),
+        category: resolvedCategory,
+        price: numPrice,
+        discount: Math.max(0, Math.min(100, Number(productForm.discount) || 0)),
+        stock: Math.max(0, Math.floor(Number(productForm.stock) || 0)),
+        unit: productForm.unit.trim() || 'piece',
+        image: productForm.image.trim(),
+        description: productForm.description.trim(),
+        featured: Boolean(productForm.featured),
+      };
+
+      if (editingProduct?._id) {
+        const res = await updateProductByAdmin({
+          productId: editingProduct._id,
+          productData: payload,
+        });
+
+        if (res?.success) {
+          setProducts((prev) =>
+            prev.map((p) =>
+              p._id === editingProduct._id ? { ...p, ...payload } : p
+            )
+          );
+          toast.success('Product updated successfully!');
+          setProductModalOpen(false);
+        } else {
+          toast.error(res?.message || 'Failed to update product.');
+        }
+      } else {
+        const res = await createProductByAdmin(payload);
+        if (res?.success && res.product) {
+          setProducts((prev) => [res.product, ...prev]);
+          toast.success('New product created! It is now live on the Home page.');
+          setProductModalOpen(false);
+        } else {
+          toast.error(res?.message || 'Failed to create product.');
+        }
+      }
+    } catch (err) {
+      toast.error('Error saving product: ' + err.message);
+    } finally {
+      setIsSavingProduct(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId, title) => {
+    if (!confirm(`Are you sure you want to delete "${title}"?`)) {
+      return;
+    }
+    setActionLoadingId(productId);
+    try {
+      const res = await deleteProductByAdmin({ productId });
+      if (res?.success) {
+        setProducts((prev) => prev.filter((p) => p._id !== productId));
+        toast.success('Product removed from catalog.');
+      } else {
+        toast.error(res?.message || 'Failed to delete product.');
+      }
+    } catch {
+      toast.error('Failed to delete product.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Products filtered for the Catalog tab
+  const catalogFilteredProducts = products.filter((p) => {
+    const matchCat =
+      productCategoryFilter === 'All' || p.category === productCategoryFilter;
+    const q = productSearch.toLowerCase().trim();
+    const matchSearch =
+      !q ||
+      p.title?.toLowerCase().includes(q) ||
+      p.description?.toLowerCase().includes(q) ||
+      p.category?.toLowerCase().includes(q);
+    return matchCat && matchSearch;
+  });
 
   // 100% Real Dynamic Stock Calculations
   const lowStockProducts = products.filter(
@@ -400,7 +579,27 @@ const AdminDashboardView = ({
               )}
             </button>
 
-            {/* 3. Stock */}
+            {/* 3. Products (Add & Edit) */}
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'products'
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
+                  : 'text-slate-600 hover:bg-sky-50 hover:text-sky-700'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <FaBoxes className={`text-[11px] ${activeTab === 'products' ? 'text-white' : 'text-slate-400'}`} />
+                <span>Products (Edit & Add)</span>
+              </div>
+              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                activeTab === 'products' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {products.length}
+              </span>
+            </button>
+
+            {/* 4. Stock */}
             <button
               onClick={() => setActiveTab('stock')}
               className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
@@ -420,7 +619,7 @@ const AdminDashboardView = ({
               )}
             </button>
 
-            {/* 4. Reports */}
+            {/* 5. Reports */}
             <button
               onClick={() => setActiveTab('reports')}
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
@@ -432,6 +631,23 @@ const AdminDashboardView = ({
               <FaFileAlt className={`text-[11px] ${activeTab === 'reports' ? 'text-white' : 'text-slate-400'}`} />
               <span>Reports</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('messages')}
+              className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'messages'
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
+                  : 'text-slate-600 hover:bg-sky-50 hover:text-sky-700'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <FaComments className={`text-[11px] ${activeTab === 'messages' ? 'text-white' : 'text-sky-600'}`} />
+                <span>Live Support Chat</span>
+              </div>
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow-2xs">
+                Live
+              </span>
+            </button>
           </div>
 
           {/* Records Group */}
@@ -439,18 +655,6 @@ const AdminDashboardView = ({
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block mb-1">
               Records
             </span>
-
-            <button
-              onClick={() => setActiveTab('stock')}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'stock'
-                  ? 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
-                  : 'text-slate-600 hover:bg-sky-50 hover:text-sky-700'
-              }`}
-            >
-              <FaBoxes className="text-[11px] text-slate-400" />
-              <span>Products ({products.length})</span>
-            </button>
 
             <button
               onClick={() => setActiveTab('users')}
@@ -561,6 +765,22 @@ const AdminDashboardView = ({
               </div>
 
               <div className="flex items-center gap-2.5">
+                <button
+                  onClick={handleOpenAddProduct}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-linear-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white px-3.5 py-2 text-xs font-bold transition-all shadow-md shadow-sky-600/25 cursor-pointer hover:-translate-y-0.5"
+                >
+                  <FaPlus className="text-[10px]" />
+                  <span>Add Product</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-sky-600 transition-colors shadow-xs cursor-pointer"
+                >
+                  <FaBoxes className="text-[10px] text-slate-400" />
+                  <span>Products ({products.length})</span>
+                </button>
+
                 <button
                   onClick={() => setActiveTab('reports')}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-sky-600 transition-colors shadow-xs cursor-pointer"
@@ -971,10 +1191,10 @@ const AdminDashboardView = ({
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="text-xs font-bold text-slate-800">Top Sellers</h3>
                     <button
-                      onClick={() => setActiveTab('stock')}
+                      onClick={() => setActiveTab('products')}
                       className="text-[11px] font-bold text-sky-600 hover:text-sky-700 cursor-pointer"
                     >
-                      Catalogue →
+                      Products Catalog →
                     </button>
                   </div>
                   <p className="text-[10px] text-slate-400 mb-3">Ranked by actual units sold</p>
@@ -1324,6 +1544,22 @@ const AdminDashboardView = ({
 
               <div className="flex items-center gap-2">
                 <button
+                  onClick={handleOpenAddProduct}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-linear-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white px-3.5 py-2 text-xs font-bold transition-all shadow-md shadow-sky-600/25 cursor-pointer hover:-translate-y-0.5"
+                >
+                  <FaPlus className="text-[10px]" />
+                  <span>Add Product</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-sky-600 transition-colors shadow-xs cursor-pointer"
+                >
+                  <FaBoxes className="text-[10px] text-slate-400" />
+                  <span>Products Catalog ({products.length})</span>
+                </button>
+
+                <button
                   onClick={() => setActiveTab('overview')}
                   className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
@@ -1453,7 +1689,7 @@ const AdminDashboardView = ({
                     <th className="py-3 px-3">Price</th>
                     <th className="py-3 px-3">Status</th>
                     <th className="py-3 px-3 text-center">Current Stock</th>
-                    <th className="py-3 px-3 text-right">Adjust & Save</th>
+                    <th className="py-3 px-3 text-right">Adjust Stock & Edit</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1550,20 +1786,32 @@ const AdminDashboardView = ({
                           </div>
                         </td>
 
-                        {/* Save Stock Button */}
+                        {/* Save Stock & Edit Button */}
                         <td className="py-3 px-3 text-right">
-                          <button
-                            onClick={() => handleSaveStock(p._id, currentStock)}
-                            disabled={isSaving}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 text-[11px] font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                          >
-                            {isSaving ? (
-                              <FaSpinner className="animate-spin text-[10px]" />
-                            ) : (
-                              <FaSave className="text-[10px]" />
-                            )}
-                            <span>Save</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleSaveStock(p._id, currentStock)}
+                              disabled={isSaving}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-1.5 text-[11px] font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                              title="Save Stock"
+                            >
+                              {isSaving ? (
+                                <FaSpinner className="animate-spin text-[10px]" />
+                              ) : (
+                                <FaSave className="text-[10px]" />
+                              )}
+                              <span>Save</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenEditProduct(p)}
+                              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:text-sky-700 hover:border-sky-300 text-slate-700 px-2.5 py-1.5 text-[11px] font-bold shadow-2xs transition-colors cursor-pointer"
+                              title="Edit Full Product Details"
+                            >
+                              <FaEdit className="text-[10px] text-sky-600" />
+                              <span>Edit</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1866,7 +2114,514 @@ const AdminDashboardView = ({
             </div>
           </div>
         )}
+
+        {/* =====================================================================
+            TAB 6: PRODUCTS CATALOG & MANAGEMENT (Add, Edit, Categorize)
+        ====================================================================== */}
+        {activeTab === 'products' && (
+          <div className="space-y-6">
+            {/* Header + Add Product Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                  <FaBoxes className="text-sky-600" />
+                  <span>Products Catalog ({products.length})</span>
+                </h1>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Add new items, edit pricing/discounts, create categories, and publish products live to the Home page.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={handleOpenAddProduct}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-linear-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white px-5 py-2.5 text-xs font-bold transition-all shadow-md shadow-sky-600/25 cursor-pointer hover:-translate-y-0.5"
+                >
+                  <FaPlus className="text-xs" />
+                  <span>Add New Product</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Total Products
+                </span>
+                <div className="text-2xl font-black text-slate-900">{products.length}</div>
+                <span className="text-[10px] text-slate-400 mt-1 block">Live in store catalog</span>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Active Categories
+                </span>
+                <div className="text-2xl font-black text-indigo-600">{existingCategories.length}</div>
+                <span className="text-[10px] text-slate-400 mt-1 block">Dynamic collections</span>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Units in Stock
+                </span>
+                <div className="text-2xl font-black text-emerald-600">{totalStockUnits}</div>
+                <span className="text-[10px] text-slate-400 mt-1 block">Available inventory</span>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Catalog Valuation
+                </span>
+                <div className="text-2xl font-black text-slate-900">${totalStockValuation.toLocaleString()}</div>
+                <span className="text-[10px] text-slate-400 mt-1 block">Retail inventory worth</span>
+              </div>
+            </div>
+
+            {/* Category Filter Pills & Search */}
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                {/* Category Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+                  <button
+                    onClick={() => setProductCategoryFilter('All')}
+                    className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      productCategoryFilter === 'All'
+                        ? 'bg-sky-600 text-white shadow-xs'
+                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    All ({products.length})
+                  </button>
+                  {existingCategories.map((cat) => {
+                    const count = products.filter((p) => p.category === cat).length;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setProductCategoryFilter(cat)}
+                        className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          productCategoryFilter === cat
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {cat} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Search */}
+                <div className="relative shrink-0">
+                  <FaSearch className="text-slate-400 text-xs absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Search products..."
+                    className="w-full sm:w-60 rounded-xl border border-slate-200 bg-slate-50/70 pl-8.5 pr-8 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-sky-500 transition-all"
+                  />
+                  {productSearch && (
+                    <button
+                      onClick={() => setProductSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <FaTimes className="text-xs" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Products Table */}
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                  <tr>
+                    <th className="py-3 px-3">Product</th>
+                    <th className="py-3 px-3">Category</th>
+                    <th className="py-3 px-3">Price &amp; Discount</th>
+                    <th className="py-3 px-3">Stock</th>
+                    <th className="py-3 px-3">Featured</th>
+                    <th className="py-3 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {catalogFilteredProducts.map((p) => {
+                    const finalPrice =
+                      p.discount > 0
+                        ? Math.round(Number(p.price) - (Number(p.price) * Number(p.discount)) / 100)
+                        : Number(p.price);
+
+                    return (
+                      <tr key={p._id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                              {p.image ? (
+                                <img
+                                  src={p.image}
+                                  alt={p.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">
+                                  No Img
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <span className="font-bold text-slate-900 block truncate max-w-xs text-xs">
+                                {p.title}
+                              </span>
+                              <span className="text-[10px] text-slate-400 block">
+                                Unit: {p.unit || 'piece'}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-100 text-[10px] font-bold uppercase tracking-wider">
+                            {p.category || 'General'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-semibold text-slate-800">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-sm font-black text-slate-900">${finalPrice}</span>
+                            {p.discount > 0 && (
+                              <>
+                                <span className="text-[10px] text-slate-400 line-through">${p.price}</span>
+                                <span className="text-[10px] text-red-500 font-bold">-{p.discount}%</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              p.stock <= 0
+                                ? 'bg-red-100 text-red-700'
+                                : p.stock <= 5
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-emerald-100 text-emerald-700'
+                            }`}
+                          >
+                            {p.stock} units
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          {p.featured ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                              <FaStar className="text-[9px]" />
+                              <span>Featured</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">Standard</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleOpenEditProduct(p)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-sky-600 hover:border-sky-300 transition-all cursor-pointer shadow-xs"
+                            >
+                              <FaEdit className="text-[10px]" />
+                              <span>Edit</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteProduct(p._id, p.title)}
+                              disabled={actionLoadingId === p._id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                              title="Delete Product"
+                            >
+                              <FaTrash className="text-[10px]" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'messages' && (
+          <div className="space-y-4">
+            <AdminLiveChatView
+              onNavigateToOrders={(email) => {
+                setSearchQuery(email);
+                setActiveTab('orders');
+              }}
+            />
+          </div>
+        )}
       </main>
+
+      {/* =========================================================================
+          ADD / EDIT PRODUCT MODAL (With Category Creation & Image Presets)
+      ========================================================================== */}
+      {productModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-2xl rounded-3xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                  <FaBoxes className="text-sky-600" />
+                  <span>{editingProduct ? 'Edit Product' : 'Add New Product'}</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {editingProduct
+                    ? 'Update product details, pricing, discount, and category.'
+                    : 'Publish a new product directly to the store and Home page.'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setProductModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <FaTimes className="text-xs" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveProduct} className="space-y-4">
+              {/* 1. Title */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block">
+                  Product Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Organic Rose & Lavender Facial Serum"
+                  value={productForm.title}
+                  onChange={(e) => setProductForm({ ...productForm, title: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-sky-500 transition-all"
+                />
+              </div>
+
+              {/* 2. Category Dropdown & Custom Category Input */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={productForm.category}
+                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-sky-500 transition-all cursor-pointer"
+                  >
+                    {existingCategories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                    <option value="NEW_CATEGORY">➕ Add New Category...</option>
+                  </select>
+                </div>
+
+                {/* If NEW_CATEGORY selected, show text input */}
+                {productForm.category === 'NEW_CATEGORY' ? (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-sky-700 block">
+                      New Category Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Organic Beverages / Snacks"
+                      value={productForm.customCategory}
+                      onChange={(e) => setProductForm({ ...productForm, customCategory: e.target.value })}
+                      className="w-full rounded-xl border border-sky-300 bg-sky-50/40 px-3.5 py-2.5 text-xs font-bold text-sky-900 focus:bg-white focus:outline-none focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 block">
+                      Unit Specification
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 250 ml, 500 g, 1 pack, piece"
+                      value={productForm.unit}
+                      onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Price, Discount, and Stock */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Price ($) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    required
+                    placeholder="e.g. 850"
+                    value={productForm.price}
+                    onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-sky-500 transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Discount (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    value={productForm.discount}
+                    onChange={(e) => setProductForm({ ...productForm, discount: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-sky-500 transition-all"
+                  />
+                  {Number(productForm.discount) > 0 && Number(productForm.price) > 0 && (
+                    <span className="text-[10px] text-emerald-600 font-bold block">
+                      Final: ${Math.round(Number(productForm.price) - (Number(productForm.price) * Number(productForm.discount)) / 100)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="10"
+                    value={productForm.stock}
+                    onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-sky-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Image URL with Live Preview & Presets */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 block">
+                  Product Image URL
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/..."
+                    value={productForm.image}
+                    onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
+                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-2.5 text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:border-sky-500 transition-all"
+                  />
+                  {/* Live Thumbnail Preview */}
+                  <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center">
+                    {productForm.image ? (
+                      <img
+                        src={productForm.image}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <FaImage className="text-slate-400 text-xs" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Presets for Fast Testing */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] text-slate-400 font-semibold">Quick presets:</span>
+                  {sampleImagePresets.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => setProductForm({ ...productForm, image: preset.url })}
+                      className="text-[10px] px-2 py-0.5 rounded-lg border border-slate-200 bg-white hover:bg-sky-50 hover:text-sky-700 text-slate-600 transition-all cursor-pointer font-medium"
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 5. Description */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block">
+                  Product Description
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Describe the product benefits, organic ingredients, and usage instructions..."
+                  value={productForm.description}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-sky-500 transition-all resize-none"
+                />
+              </div>
+
+              {/* 6. Featured Toggle */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <FaStar className="text-amber-500 text-xs" />
+                    <span>Feature on Home Page</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Highlight this item in the Featured &amp; Trending section on the Home page.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={productForm.featured}
+                  onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })}
+                  className="checkbox checkbox-sm checkbox-info rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Form Actions */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setProductModalOpen(false)}
+                  disabled={isSavingProduct}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSavingProduct}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-linear-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-sky-600/25 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingProduct ? (
+                    <>
+                      <FaSpinner className="animate-spin text-xs" />
+                      <span>Saving Product...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaSave className="text-xs" />
+                      <span>{editingProduct ? 'Save Changes' : 'Publish Product'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -78,7 +78,7 @@ const HeroBanner = () => {
           <div className="relative mx-auto w-full max-w-lg lg:col-span-5 lg:max-w-none">
             <div className="group relative overflow-hidden rounded-3xl bg-linear-to-tr from-sky-100/50 to-indigo-100/50 p-2 shadow-2xl shadow-sky-500/10">
               <Image
-                src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=900"
+                src="/golocery product.png"
                 alt="Fresh organic groceries"
                 width={900}
                 height={600}

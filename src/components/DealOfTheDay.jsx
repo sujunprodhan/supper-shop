@@ -7,7 +7,7 @@ import Container from '@/layout/Container';
 import { FaClock, FaFire, FaShoppingCart, FaArrowRight, FaShieldAlt, FaStar } from 'react-icons/fa';
 
 const DealOfTheDay = () => {
-  // Live countdown timer 
+  // Live countdown timer
   const [timeLeft, setTimeLeft] = useState({
     hours: 14,
     minutes: 42,
@@ -125,7 +125,7 @@ const DealOfTheDay = () => {
             <div className="relative rounded-3xl bg-slate-800/60 border border-slate-700/80 p-6 sm:p-8 backdrop-blur-md shadow-2xl">
               <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-900/80 border border-slate-700/60">
                 <Image
-                  src="https://images.unsplash.com/photo-1608248597359-00f72390f701?w=800&auto=format&fit=crop&q=80"
+                  src="/hot deal.png"
                   alt="Deal of the Day"
                   fill
                   sizes="(max-width: 1024px) 100vw, 40vw"

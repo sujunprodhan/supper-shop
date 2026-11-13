@@ -2,6 +2,8 @@ import React from 'react';
 import Container from '@/layout/Container';
 import CheckoutView from '@/components/CheckoutView';
 import { getCart } from '@/actions/server/cart';
+import { getServerSession } from 'next-auth';
+import authOptions from '@/lib/authOptions';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,12 +13,18 @@ export const metadata = {
 };
 
 const CheckoutPage = async () => {
-  const cartItems = (await getCart()) || [];
+  const [cartItems, session] = await Promise.all([
+    getCart(),
+    getServerSession(authOptions),
+  ]);
 
   return (
     <div className="bg-slate-50/50 min-h-screen">
       <Container>
-        <CheckoutView initialCart={cartItems} />
+        <CheckoutView
+          initialCart={cartItems || []}
+          initialUser={session?.user || null}
+        />
       </Container>
     </div>
   );

@@ -32,22 +32,19 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // URL category param (defaults to 'All' when not provided in URL)
   const urlCategory = searchParams.get('category') || 'All';
 
   const [selectedCategory, setSelectedCategory] = useState(urlCategory);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('featured'); // 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'discount'
+  const [sortBy, setSortBy] = useState('featured');
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [priceRange, setPriceRange] = useState(null); // null means no price limit by default
+  const [priceRange, setPriceRange] = useState(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  // Sync with URL when search params change
   useEffect(() => {
     setSelectedCategory(urlCategory);
   }, [urlCategory]);
 
-  // Compute live categories, counts, and realistic min/max price bounds
   const { categories, categoryCounts, minPossiblePrice, maxPossiblePrice } = useMemo(() => {
     const counts = {};
     let highestPrice = 0;
@@ -117,7 +114,6 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
         if (inStockOnly && Number(p.stock || 0) <= 0) {
           return false;
         }
-        // Price Filter (only when specifically restricted)
         if (isPriceFilterActive) {
           const finalPrice =
             p.discount > 0
@@ -145,7 +141,15 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
         if (sortBy === 'discount') return (Number(b.discount) || 0) - (Number(a.discount) || 0);
         return 0; // 'featured' (original db order)
       });
-  }, [initialProducts, selectedCategory, searchQuery, inStockOnly, isPriceFilterActive, priceRange, sortBy]);
+  }, [
+    initialProducts,
+    selectedCategory,
+    searchQuery,
+    inStockOnly,
+    isPriceFilterActive,
+    priceRange,
+    sortBy,
+  ]);
 
   const hasActiveFilters =
     selectedCategory !== 'All' ||
@@ -157,7 +161,6 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
   return (
     <div className="py-8 sm:py-12 bg-slate-50/40 min-h-screen">
       <Container>
-        {/* ================= MOBILE HORIZONTAL CATEGORY PILL BAR ================= */}
         <div className="lg:hidden mb-6 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -173,7 +176,6 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
             </button>
           </div>
 
-          {/* Horizontal category scroll */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar">
             {categories.map((cat) => {
               const isSelected = selectedCategory === cat;
@@ -405,7 +407,10 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
                 {searchQuery && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
                     <span>Search: &quot;{searchQuery}&quot;</span>
-                    <button onClick={() => setSearchQuery('')} className="hover:text-slate-900 cursor-pointer">
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="hover:text-slate-900 cursor-pointer"
+                    >
                       <FaTimes className="text-[10px]" />
                     </button>
                   </span>
@@ -414,7 +419,10 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
                 {inStockOnly && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
                     <span>In-Stock Only</span>
-                    <button onClick={() => setInStockOnly(false)} className="hover:text-emerald-900 cursor-pointer">
+                    <button
+                      onClick={() => setInStockOnly(false)}
+                      className="hover:text-emerald-900 cursor-pointer"
+                    >
                       <FaTimes className="text-[10px]" />
                     </button>
                   </span>
@@ -423,7 +431,10 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
                 {isPriceFilterActive && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
                     <span>Under ${priceRange}</span>
-                    <button onClick={() => setPriceRange(null)} className="hover:text-amber-900 cursor-pointer">
+                    <button
+                      onClick={() => setPriceRange(null)}
+                      className="hover:text-amber-900 cursor-pointer"
+                    >
                       <FaTimes className="text-[10px]" />
                     </button>
                   </span>
@@ -454,8 +465,8 @@ const ProductCatalogView = ({ initialProducts = [] }) => {
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-slate-800">No products found</h3>
                   <p className="text-xs text-slate-500 max-w-sm">
-                    No products matched your selected category and filters. Try clearing your filters
-                    or adjusting the search query.
+                    No products matched your selected category and filters. Try clearing your
+                    filters or adjusting the search query.
                   </p>
                 </div>
                 <button

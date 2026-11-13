@@ -5,6 +5,7 @@ import Footer from '@/layout/Footer';
 import NextAuthProvider from '@/provider/NextAuthProvider';
 import { CartProvider } from '@/provider/CartProvider';
 import { Toaster } from 'sonner';
+import FloatingChatWidgets from '@/components/FloatingChatWidgets';
 
 const inter = Inter({
   weight: ['100', '200', '400', '500', '600', '800'],
@@ -35,6 +36,7 @@ export default function RootLayout({ children }) {
             <footer className="min-h-62.5">
               <Footer />
             </footer>
+            <FloatingChatWidgets />
           </CartProvider>
         </NextAuthProvider>
       </body>

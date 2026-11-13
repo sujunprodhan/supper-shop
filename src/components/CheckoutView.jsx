@@ -27,12 +27,12 @@ import { createOrder } from '@/actions/server/order';
 import { useCart } from '@/provider/CartProvider';
 import { toast } from 'sonner';
 
-const CheckoutView = ({ initialCart = [] }) => {
+const CheckoutView = ({ initialCart = [], initialUser = null }) => {
   const router = useRouter();
   const session = useSession();
   const { refreshCartCount } = useCart();
 
-  const user = session?.data?.user;
+  const user = initialUser || session?.data?.user;
   const items = initialCart;
 
   // Form State
@@ -50,15 +50,16 @@ const CheckoutView = ({ initialCart = [] }) => {
 
   // Sync user details if session loads later
   useEffect(() => {
-    if (user?.email && !formData.email) {
+    const activeUser = initialUser || session?.data?.user;
+    if (activeUser?.email && !formData.email) {
       setFormData((prev) => ({
         ...prev,
-        email: user.email,
-        firstName: prev.firstName || (user.name ? user.name.split(' ')[0] : ''),
-        lastName: prev.lastName || (user.name ? user.name.split(' ').slice(1).join(' ') : ''),
+        email: activeUser.email,
+        firstName: prev.firstName || (activeUser.name ? activeUser.name.split(' ')[0] : ''),
+        lastName: prev.lastName || (activeUser.name ? activeUser.name.split(' ').slice(1).join(' ') : ''),
       }));
     }
-  }, [user]);
+  }, [initialUser, session?.data?.user]);
 
   const [shippingMethod, setShippingMethod] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState('card');
@@ -142,6 +143,7 @@ const CheckoutView = ({ initialCart = [] }) => {
     setIsSubmitting(true);
     try {
       const orderPayload = {
+        customerEmail: formData.email?.trim(),
         items,
         shippingAddress: {
           firstName: formData.firstName,
@@ -246,7 +248,19 @@ const CheckoutView = ({ initialCart = [] }) => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-xs font-semibold text-slate-700">Email Address *</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700">Email Address *</label>
+                    {user?.email && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, email: user.email }))}
+                        className="text-[10px] text-sky-600 hover:text-sky-700 font-semibold bg-sky-50 hover:bg-sky-100 px-2.5 py-0.5 rounded-full transition-colors cursor-pointer"
+                        title="Click to reset to your account email"
+                      >
+                        Account: {user.email}
+                      </button>
+                    )}
+                  </div>
                   <div className="relative flex items-center">
                     <span className="absolute left-3.5 text-slate-400">
                       <FaEnvelope className="text-xs" />
@@ -261,6 +275,9 @@ const CheckoutView = ({ initialCart = [] }) => {
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:border-sky-500 focus:bg-white focus:outline-none transition-colors"
                     />
                   </div>
+                  <p className="text-[11px] text-slate-400">
+                    The official invoice &amp; tracking updates will be sent to this email address.
+                  </p>
                 </div>
 
                 <div className="space-y-1.5 sm:col-span-2">

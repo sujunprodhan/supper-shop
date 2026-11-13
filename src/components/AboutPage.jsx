@@ -18,7 +18,7 @@ const AboutPage = async () => {
   return (
     <div className="bg-white">
       {/* 1. About Page Hero Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-sky-50/70 via-white to-white py-14 md:py-20 border-b border-slate-100">
+      <div className="relative overflow-hidden bg-linear-to-b from-sky-50/70 via-white to-white py-14 md:py-20 border-b border-slate-100">
         <div className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl"></div>
         <div className="pointer-events-none absolute top-1/2 -right-20 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl"></div>
 
@@ -31,7 +31,7 @@ const AboutPage = async () => {
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-tight">
               Bringing Pure Freshness To{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-600">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-sky-600 to-indigo-600">
                 Your Doorstep
               </span>
             </h1>
@@ -90,7 +90,7 @@ const AboutPage = async () => {
             <div className="relative mx-auto w-full max-w-lg lg:col-span-6 lg:max-w-none">
               <div className="relative aspect-4/3 overflow-hidden rounded-3xl bg-slate-100 shadow-xl border border-slate-100">
                 <Image
-                  src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=900"
+                  src="/golocery product.png"
                   alt="Organic supermarket products"
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"

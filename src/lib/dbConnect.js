@@ -9,6 +9,7 @@ export const collections = {
   CART: 'cart',
   WISHLIST: 'wishlist',
   ORDER: 'order',
+  CHAT_CONVERSATION: 'chat_conversations',
 };
 
 const client = new MongoClient(uri, {

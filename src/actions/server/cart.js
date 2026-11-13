@@ -28,7 +28,6 @@ export const handleCart = async ({ product, inc = true }) => {
 
     if (isAdded) {
       if (!inc && isAdded.quantity <= 1) {
-        // If decrementing when quantity is 1, remove item
         const result = await cartCollection.deleteOne(query);
         return { success: Boolean(result.acknowledged), message: 'Item removed from cart' };
       }

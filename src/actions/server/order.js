@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { ObjectId } from 'mongodb';
 import { stripe } from '@/lib/stripe';
 import { initSSLCommerzPayment } from '@/lib/sslcommerz';
+import { sendOrderInvoiceEmail } from '@/lib/sendEmail';
 
 export const createOrder = async (orderPayload) => {
   try {
@@ -35,11 +36,26 @@ export const createOrder = async (orderPayload) => {
     const orderCollection = dbConnect(collections.ORDER);
     const cartCollection = dbConnect(collections.CART);
 
+    const targetEmail = (
+      orderPayload.customerEmail ||
+      shippingAddress.email ||
+      session.user.email
+    ).trim();
+
+    const customerName =
+      `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() ||
+      session.user.name ||
+      'Customer';
+
     const newOrder = {
-      userEmail: session.user.email,
-      userName: session.user.name || `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim(),
+      userEmail: targetEmail,
+      accountEmail: session.user.email,
+      userName: customerName,
       items,
-      shippingAddress,
+      shippingAddress: {
+        ...shippingAddress,
+        email: targetEmail,
+      },
       deliveryMethod,
       paymentMethod,
       mobileProvider,
@@ -58,10 +74,13 @@ export const createOrder = async (orderPayload) => {
     const orderId = insertResult.insertedId.toString();
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
-    // 1. Cash on Delivery (COD) Flow
     if (paymentMethod === 'cod') {
-      // Clear user cart
       await cartCollection.deleteMany({ email: session.user.email });
+
+      sendOrderInvoiceEmail({ ...newOrder, _id: insertResult.insertedId }).catch((err) =>
+        console.error('[createOrder COD] Invoice email error:', err)
+      );
+
       return {
         success: true,
         orderId,
@@ -69,11 +88,9 @@ export const createOrder = async (orderPayload) => {
       };
     }
 
-    // 2. Direct Card Flow / Stripe Card Flow
     if (paymentMethod === 'card') {
       const { cardDetails } = orderPayload;
 
-      // If customer submitted direct card details on page
       if (cardDetails && cardDetails.number) {
         const cleanNumber = cardDetails.number.replace(/\s+/g, '');
         const last4 = cleanNumber.slice(-4);
@@ -93,8 +110,15 @@ export const createOrder = async (orderPayload) => {
           }
         );
 
-        // Clear user cart
         await cartCollection.deleteMany({ email: session.user.email });
+
+        sendOrderInvoiceEmail({
+          ...newOrder,
+          _id: insertResult.insertedId,
+          paymentStatus: `Pending (Card •••• ${last4})`,
+        }).catch((err) =>
+          console.error('[createOrder Card] Invoice email error:', err)
+        );
 
         return {
           success: true,
@@ -103,7 +127,6 @@ export const createOrder = async (orderPayload) => {
         };
       }
 
-      // Fallback to Stripe Hosted Checkout
       try {
         const lineItems = items.map((item) => {
           const unitPrice = Math.round(Number(item.price) || 1);
@@ -114,13 +137,12 @@ export const createOrder = async (orderPayload) => {
                 name: item.title || 'Product',
                 images: item.image && item.image.startsWith('http') ? [item.image] : [],
               },
-              unit_amount: Math.round(unitPrice * 100), // Stripe takes amounts in cents
+              unit_amount: Math.round(unitPrice * 100),
             },
             quantity: Number(item.quantity) || 1,
           };
         });
 
-        // Add Shipping if any
         if (shippingCost > 0) {
           lineItems.push({
             price_data: {
@@ -161,7 +183,6 @@ export const createOrder = async (orderPayload) => {
       }
     }
 
-    // 3. Mobile Banking Flow (SSLCommerz: bKash, Nagad, Rocket)
     if (paymentMethod === 'mobile') {
       try {
         const sslResult = await initSSLCommerzPayment({
@@ -246,13 +267,19 @@ export const verifyAndCompleteStripeOrder = async (sessionId, orderId) => {
         }
       );
 
-      // Clear cart
       const userEmail = stripeSession.metadata?.userEmail || stripeSession.customer_email;
       if (userEmail) {
         await cartCollection.deleteMany({ email: userEmail });
       }
 
       const updatedOrder = await orderCollection.findOne({ _id: new ObjectId(targetOrderId) });
+
+      if (updatedOrder) {
+        sendOrderInvoiceEmail(updatedOrder).catch((err) =>
+          console.error('[verifyAndCompleteStripeOrder] Invoice email error:', err)
+        );
+      }
+
       return JSON.parse(JSON.stringify(updatedOrder));
     }
 

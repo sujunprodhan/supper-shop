@@ -1,5 +1,6 @@
 import { collections, dbConnect } from '@/lib/dbConnect';
 import { ObjectId } from 'mongodb';
+import { sendOrderInvoiceEmail } from '@/lib/sendEmail';
 
 export async function POST(request) {
   try {
@@ -32,6 +33,13 @@ export async function POST(request) {
 
         if (order.userEmail) {
           await cartCollection.deleteMany({ email: order.userEmail });
+        }
+
+        const updatedOrder = await orderCollection.findOne({ _id: new ObjectId(tran_id) });
+        if (updatedOrder) {
+          sendOrderInvoiceEmail(updatedOrder).catch((err) =>
+            console.error('[SSLCommerz Success] Invoice email error:', err)
+          );
         }
       }
 

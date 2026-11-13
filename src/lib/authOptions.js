@@ -94,14 +94,13 @@ export const authOptions = {
           token.image = user.image;
         }
       } else if (token?.email) {
-        // Fetch latest role directly from DB so admin promotions take effect immediately
         try {
           const dbUser = await dbConnect(collections.USER).findOne({ email: token.email });
           if (dbUser?.role) {
             token.role = dbUser.role;
           }
         } catch (e) {
-          // ignore
+          
         }
       }
       return token;

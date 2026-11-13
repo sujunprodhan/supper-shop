@@ -5,8 +5,8 @@ import { collections, dbConnect } from '@/lib/dbConnect';
 import { getServerSession } from 'next-auth';
 import { ObjectId } from 'mongodb';
 import { revalidatePath } from 'next/cache';
+import { sendOrderApprovalEmail } from '@/lib/sendEmail';
 
-// Helper to verify admin permissions (with auto-promotion if no admin exists yet)
 const verifyAdmin = async () => {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.email) {
@@ -20,7 +20,6 @@ const verifyAdmin = async () => {
     return { isAuthorized: false, message: 'User account not found.' };
   }
 
-  // Auto-promote if no admin exists in the database
   if (user.role !== 'admin') {
     const adminCount = await userCollection.countDocuments({ role: 'admin' });
     if (adminCount === 0) {
@@ -37,7 +36,6 @@ const verifyAdmin = async () => {
   return { isAuthorized: true, user, session };
 };
 
-// 1. Get Admin Dashboard Overview Statistics (100% Real Order & Inventory Data)
 export const getAdminOverview = async () => {
   try {
     const auth = await verifyAdmin();
@@ -49,13 +47,11 @@ export const getAdminOverview = async () => {
     const userCollection = dbConnect(collections.USER);
     const productCollection = dbConnect(collections.PRODUCT);
 
-    // Fetch all real orders, users, and products from MongoDB
     const allOrders = await orderCollection.find().sort({ createdAt: -1 }).toArray();
     const totalUsers = await userCollection.countDocuments();
     const totalProducts = await productCollection.countDocuments();
     const allProducts = await productCollection.find().toArray();
 
-    // 100% Real Financial Metrics
     const totalRevenue = allOrders.reduce((acc, order) => {
       const isPaid =
         order.orderStatus === 'Confirmed' ||
@@ -91,7 +87,6 @@ export const getAdminOverview = async () => {
           )
         : 0;
 
-    // 100% Real Pipeline Breakdown
     const pipeline = {
       new: allOrders.filter((o) => o.orderStatus === 'Pending').length,
       packing: allOrders.filter((o) => o.orderStatus === 'Processing').length,
@@ -100,7 +95,6 @@ export const getAdminOverview = async () => {
       cancelled: allOrders.filter((o) => o.orderStatus === 'Cancelled').length,
     };
 
-    // 100% Real Revenue by Channel (Payment Method)
     const channelRevenue = {
       card: allOrders
         .filter((o) => o.paymentMethod === 'card' && o.orderStatus !== 'Cancelled')
@@ -113,7 +107,6 @@ export const getAdminOverview = async () => {
         .reduce((sum, o) => sum + (Number(o.grandTotal) || 0), 0),
     };
 
-    // Real Top Sellers from actual customer orders
     const productSalesMap = {};
     allOrders.forEach((order) => {
       if (order.orderStatus === 'Cancelled') return;
@@ -138,7 +131,6 @@ export const getAdminOverview = async () => {
       .sort((a, b) => b.units - a.units)
       .slice(0, 5);
 
-    // Real Low Stock Products from MongoDB product collection
     const runningLow = allProducts
       .filter((p) => Number(p.stock || 0) <= 5)
       .map((p) => ({
@@ -222,6 +214,16 @@ export const updateOrderPaymentStatus = async ({ orderId, paymentStatus }) => {
       }
     );
 
+    if (result.modifiedCount > 0) {
+      // Send confirmation & approval email to the customer
+      const approvedOrder = await orderCollection.findOne({ _id: new ObjectId(orderId) });
+      if (approvedOrder && approvedOrder.userEmail) {
+        sendOrderApprovalEmail(approvedOrder).catch((err) =>
+          console.error('[updateOrderPaymentStatus] Approval email error:', err)
+        );
+      }
+    }
+
     revalidatePath('/admin');
     revalidatePath('/dashboard');
 
@@ -257,6 +259,15 @@ export const updateOrderStatus = async ({ orderId, orderStatus }) => {
         },
       }
     );
+
+    if (result.modifiedCount > 0 && orderStatus === 'Confirmed') {
+      const confirmedOrder = await orderCollection.findOne({ _id: new ObjectId(orderId) });
+      if (confirmedOrder && confirmedOrder.userEmail) {
+        sendOrderApprovalEmail(confirmedOrder).catch((err) =>
+          console.error('[updateOrderStatus] Approval email error:', err)
+        );
+      }
+    }
 
     revalidatePath('/admin');
     revalidatePath('/dashboard');
@@ -430,7 +441,10 @@ export const getUserDashboardData = async () => {
     const userCollection = dbConnect(collections.USER);
 
     const [userOrders, wishlistCount, userProfile] = await Promise.all([
-      orderCollection.find({ userEmail: email }).sort({ createdAt: -1 }).toArray(),
+      orderCollection
+        .find({ $or: [{ userEmail: email }, { accountEmail: email }] })
+        .sort({ createdAt: -1 })
+        .toArray(),
       wishlistCollection.countDocuments({ email }),
       userCollection.findOne({ email }, { projection: { password: 0 } }),
     ]);
@@ -513,7 +527,181 @@ export const updateProductStock = async ({ productId, newStock }) => {
   }
 };
 
-// 11. Lightweight Live Updates Polling (Orders, Revenue, Users, Inventory)
+// 11. Create / Add New Product (Admin Only)
+export const createProductByAdmin = async (productData) => {
+  try {
+    const auth = await verifyAdmin();
+    if (!auth.isAuthorized) {
+      return { success: false, message: auth.message };
+    }
+
+    const {
+      title,
+      category,
+      price,
+      discount = 0,
+      stock = 0,
+      unit = 'piece',
+      image = '',
+      description = '',
+      featured = false,
+    } = productData || {};
+
+    if (!title || !title.trim()) {
+      return { success: false, message: 'Product title is required.' };
+    }
+
+    const numPrice = Number(price);
+    if (isNaN(numPrice) || numPrice < 0) {
+      return { success: false, message: 'Valid product price is required.' };
+    }
+
+    const cleanCategory = (category && category.trim()) || 'General';
+    const numDiscount = Math.max(0, Math.min(100, Number(discount) || 0));
+    const numStock = Math.max(0, Math.floor(Number(stock) || 0));
+
+    // Default high-quality placeholder if image is empty
+    const productImage =
+      image && image.trim()
+        ? image.trim()
+        : 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&auto=format&fit=crop&q=80';
+
+    const newDoc = {
+      title: title.trim(),
+      category: cleanCategory,
+      price: numPrice,
+      discount: numDiscount,
+      stock: numStock,
+      unit: (unit && unit.trim()) || 'piece',
+      image: productImage,
+      description: description ? description.trim() : '',
+      featured: Boolean(featured),
+      rating: 4.8,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const productCollection = dbConnect(collections.PRODUCT);
+    const result = await productCollection.insertOne(newDoc);
+
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath('/admin');
+
+    return {
+      success: true,
+      message: 'Product created and published to store successfully!',
+      product: {
+        ...newDoc,
+        _id: result.insertedId.toString(),
+      },
+    };
+  } catch (error) {
+    console.error('Error in createProductByAdmin:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+// 12. Update / Edit Existing Product (Admin Only)
+export const updateProductByAdmin = async ({ productId, productData }) => {
+  try {
+    const auth = await verifyAdmin();
+    if (!auth.isAuthorized) {
+      return { success: false, message: auth.message };
+    }
+
+    if (!productId || !ObjectId.isValid(productId)) {
+      return { success: false, message: 'Invalid product ID.' };
+    }
+
+    const {
+      title,
+      category,
+      price,
+      discount = 0,
+      stock = 0,
+      unit,
+      image,
+      description,
+      featured,
+    } = productData || {};
+
+    if (!title || !title.trim()) {
+      return { success: false, message: 'Product title cannot be empty.' };
+    }
+
+    const numPrice = Number(price);
+    if (isNaN(numPrice) || numPrice < 0) {
+      return { success: false, message: 'Valid price is required.' };
+    }
+
+    const updateFields = {
+      title: title.trim(),
+      category: (category && category.trim()) || 'General',
+      price: numPrice,
+      discount: Math.max(0, Math.min(100, Number(discount) || 0)),
+      stock: Math.max(0, Math.floor(Number(stock) || 0)),
+      unit: (unit && unit.trim()) || 'piece',
+      description: description ? description.trim() : '',
+      featured: Boolean(featured),
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (image && image.trim()) {
+      updateFields.image = image.trim();
+    }
+
+    const productCollection = dbConnect(collections.PRODUCT);
+    const result = await productCollection.updateOne(
+      { _id: new ObjectId(productId) },
+      { $set: updateFields }
+    );
+
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath(`/products/${productId}`);
+    revalidatePath('/admin');
+
+    return {
+      success: Boolean(result.modifiedCount > 0 || result.matchedCount > 0),
+      message: 'Product updated successfully!',
+    };
+  } catch (error) {
+    console.error('Error in updateProductByAdmin:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+// 13. Delete Product (Admin Only)
+export const deleteProductByAdmin = async ({ productId }) => {
+  try {
+    const auth = await verifyAdmin();
+    if (!auth.isAuthorized) {
+      return { success: false, message: auth.message };
+    }
+
+    if (!productId || !ObjectId.isValid(productId)) {
+      return { success: false, message: 'Invalid product ID.' };
+    }
+
+    const productCollection = dbConnect(collections.PRODUCT);
+    const result = await productCollection.deleteOne({ _id: new ObjectId(productId) });
+
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath('/admin');
+
+    return {
+      success: Boolean(result.deletedCount > 0),
+      message: result.deletedCount > 0 ? 'Product deleted successfully.' : 'Product not found.',
+    };
+  } catch (error) {
+    console.error('Error in deleteProductByAdmin:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+// 14. Lightweight Live Updates Polling (Orders, Revenue, Users, Inventory)
 export const getLiveAdminUpdates = async () => {
   try {
     const auth = await verifyAdmin();
